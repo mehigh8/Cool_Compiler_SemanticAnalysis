@@ -1,5 +1,8 @@
 package cool.compiler;
 
+import cool.structures.ClassSymbol;
+import cool.structures.FunctionSymbol;
+import cool.structures.IdSymbol;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 
@@ -35,6 +38,9 @@ class Class extends ASTNode {
     Token classId;
     Token parentClassId;
     List<Feature> features;
+
+    ClassSymbol symbol;
+
     Class(ParserRuleContext ctx, Token start, Token classId, Token parentClassId, List<Feature> features) {
         super(ctx, start);
         this.classId = classId;
@@ -44,6 +50,14 @@ class Class extends ASTNode {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public ClassSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(ClassSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 
@@ -58,6 +72,9 @@ class FuncFeature extends Feature {
     Token funcId;
     Token funcType;
     Expression e;
+
+    FunctionSymbol symbol;
+
     FuncFeature(ParserRuleContext ctx, Token start, List<Formal> formals, Token funcId, Token funcType, Expression e) {
         super(ctx, start);
         this.formals = formals;
@@ -69,12 +86,23 @@ class FuncFeature extends Feature {
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    public FunctionSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(FunctionSymbol symbol) {
+        this.symbol = symbol;
+    }
 }
 
 class VarFeature extends Feature {
     Token varId;
     Token varType;
     Expression e;
+
+    IdSymbol symbol;
+
     VarFeature(ParserRuleContext ctx, Token start, Token varId, Token varType, Expression e) {
         super(ctx, start);
         this.varId = varId;
@@ -85,11 +113,22 @@ class VarFeature extends Feature {
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    public IdSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(IdSymbol symbol) {
+        this.symbol = symbol;
+    }
 }
 
 class Formal extends ASTNode {
     Token formalId;
     Token formalType;
+
+    IdSymbol symbol;
+
     Formal(ParserRuleContext ctx, Token start, Token formalId, Token formalType) {
         super(ctx, start);
         this.formalId = formalId;
@@ -98,6 +137,14 @@ class Formal extends ASTNode {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public IdSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(IdSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 
@@ -185,6 +232,9 @@ class Local extends ASTNode {
     Token varId;
     Token varType;
     Expression varExpr;
+
+    IdSymbol symbol;
+
     Local(ParserRuleContext ctx, Token start, Token varId, Token varType, Expression varExpr) {
         super(ctx, start);
         this.varId = varId;
@@ -194,6 +244,14 @@ class Local extends ASTNode {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public IdSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(IdSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 
@@ -215,6 +273,9 @@ class CaseBranch extends ASTNode {
     Token varId;
     Token varType;
     Expression branchExpr;
+
+    IdSymbol symbol;
+
     CaseBranch(ParserRuleContext ctx, Token start, Token varId, Token varType, Expression branchExpr) {
         super(ctx, start);
         this.varId = varId;
@@ -224,6 +285,14 @@ class CaseBranch extends ASTNode {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public IdSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(IdSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 
@@ -365,6 +434,9 @@ class Paren extends Expression {
 
 class Id extends Expression {
     Token varId;
+
+    IdSymbol symbol;
+
     Id(ParserRuleContext ctx, Token start, Token varId) {
         super(ctx, start);
         this.varId = varId;
@@ -372,6 +444,14 @@ class Id extends Expression {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public IdSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(IdSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 
