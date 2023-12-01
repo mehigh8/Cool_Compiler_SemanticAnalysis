@@ -23,7 +23,7 @@ public class FunctionSymbol extends IdSymbol implements Scope {
 
     @Override
     public Symbol lookup(String str) {
-        var sym = symbols.get(str);
+        var sym = symbols.get(str.substring(1));
 
         if (sym != null)
             return sym;

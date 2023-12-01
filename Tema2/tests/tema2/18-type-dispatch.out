@@ -1,0 +1,2 @@
+"18-type-dispatch.cl", line 11:15, Semantic error: Type of static dispatch cannot be SELF_TYPE
+Compilation halted

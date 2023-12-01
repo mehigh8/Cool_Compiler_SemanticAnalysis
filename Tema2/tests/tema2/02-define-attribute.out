@@ -1,0 +1,4 @@
+"02-define-attribute.cl", line 6:5, Semantic error: Class A has attribute with illegal name self
+"02-define-attribute.cl", line 8:5, Semantic error: Class A redefines attribute x
+"02-define-attribute.cl", line 10:5, Semantic error: Class A redefines attribute x
+Compilation halted

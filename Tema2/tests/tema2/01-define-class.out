@@ -1,0 +1,5 @@
+"01-define-class.cl", line 3:7, Semantic error: Class Int is redefined
+"01-define-class.cl", line 5:18, Semantic error: Class C has illegal parent Int
+"01-define-class.cl", line 7:7, Semantic error: Class has illegal name SELF_TYPE
+"01-define-class.cl", line 9:18, Semantic error: Class D has illegal parent SELF_TYPE
+Compilation halted

@@ -3,6 +3,7 @@ package cool.compiler;
 import cool.structures.ClassSymbol;
 import cool.structures.FunctionSymbol;
 import cool.structures.IdSymbol;
+import cool.structures.LetOrCaseSymbol;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 
@@ -74,6 +75,7 @@ class FuncFeature extends Feature {
     Expression e;
 
     FunctionSymbol symbol;
+    String parentClass;
 
     FuncFeature(ParserRuleContext ctx, Token start, List<Formal> formals, Token funcId, Token funcType, Expression e) {
         super(ctx, start);
@@ -94,6 +96,14 @@ class FuncFeature extends Feature {
     public void setSymbol(FunctionSymbol symbol) {
         this.symbol = symbol;
     }
+
+    public String getParentClass() {
+        return parentClass;
+    }
+
+    public void setParentClass(String parentClass) {
+        this.parentClass = parentClass;
+    }
 }
 
 class VarFeature extends Feature {
@@ -102,6 +112,7 @@ class VarFeature extends Feature {
     Expression e;
 
     IdSymbol symbol;
+    String parentClass;
 
     VarFeature(ParserRuleContext ctx, Token start, Token varId, Token varType, Expression e) {
         super(ctx, start);
@@ -120,6 +131,14 @@ class VarFeature extends Feature {
 
     public void setSymbol(IdSymbol symbol) {
         this.symbol = symbol;
+    }
+
+    public String getParentClass() {
+        return parentClass;
+    }
+
+    public void setParentClass(String parentClass) {
+        this.parentClass = parentClass;
     }
 }
 
@@ -158,6 +177,9 @@ class ExplicitDispatch extends Expression {
     Expression obj;
     Token parentType;
     ImplicitDispatch dispatch;
+
+    ClassSymbol parentSymbol;
+
     ExplicitDispatch(ParserRuleContext ctx, Token start, Expression obj, Token parentType, ImplicitDispatch dispatch) {
         super(ctx, start);
         this.obj = obj;
@@ -168,12 +190,23 @@ class ExplicitDispatch extends Expression {
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    public ClassSymbol getParentSymbol() {
+        return parentSymbol;
+    }
+
+    public void setParentSymbol(ClassSymbol parentSymbol) {
+        this.parentSymbol = parentSymbol;
+    }
 }
 
 class ImplicitDispatch extends Expression {
     Token funcId;
     List<Expression> funcParams;
     boolean fromExplicit;
+
+    FunctionSymbol symbol;
+
     ImplicitDispatch(ParserRuleContext ctx, Token start, Token funcId, List<Expression> funcParams, boolean fromExplicit) {
         super(ctx, start);
         this.funcId = funcId;
@@ -183,6 +216,14 @@ class ImplicitDispatch extends Expression {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public FunctionSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(FunctionSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 
@@ -233,7 +274,7 @@ class Local extends ASTNode {
     Token varType;
     Expression varExpr;
 
-    IdSymbol symbol;
+    LetOrCaseSymbol symbol;
 
     Local(ParserRuleContext ctx, Token start, Token varId, Token varType, Expression varExpr) {
         super(ctx, start);
@@ -246,11 +287,11 @@ class Local extends ASTNode {
         return visitor.visit(this);
     }
 
-    public IdSymbol getSymbol() {
+    public LetOrCaseSymbol getSymbol() {
         return symbol;
     }
 
-    public void setSymbol(IdSymbol symbol) {
+    public void setSymbol(LetOrCaseSymbol symbol) {
         this.symbol = symbol;
     }
 }
@@ -274,7 +315,7 @@ class CaseBranch extends ASTNode {
     Token varType;
     Expression branchExpr;
 
-    IdSymbol symbol;
+    LetOrCaseSymbol symbol;
 
     CaseBranch(ParserRuleContext ctx, Token start, Token varId, Token varType, Expression branchExpr) {
         super(ctx, start);
@@ -287,11 +328,11 @@ class CaseBranch extends ASTNode {
         return visitor.visit(this);
     }
 
-    public IdSymbol getSymbol() {
+    public LetOrCaseSymbol getSymbol() {
         return symbol;
     }
 
-    public void setSymbol(IdSymbol symbol) {
+    public void setSymbol(LetOrCaseSymbol symbol) {
         this.symbol = symbol;
     }
 }

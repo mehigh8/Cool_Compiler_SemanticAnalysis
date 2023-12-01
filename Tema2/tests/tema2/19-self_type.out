@@ -1,0 +1,2 @@
+"19-self_type.cl", line 5:11, Semantic error: Method h of class A has formal parameter y with illegal type SELF_TYPE
+Compilation halted
