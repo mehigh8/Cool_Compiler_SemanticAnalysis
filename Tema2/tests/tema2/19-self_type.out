@@ -1,2 +1,17 @@
 "19-self_type.cl", line 5:11, Semantic error: Method h of class A has formal parameter y with illegal type SELF_TYPE
-Compilation halted
+Exception in thread "main" java.lang.NullPointerException: Cannot invoke "cool.structures.ClassSymbol.getName()" because the return value of "cool.structures.FunctionSymbol.getType()" is null
+	at cool.compiler.VerificationPassVisitor.visit(VerificationPassVisitor.java:52)
+	at cool.compiler.VerificationPassVisitor.visit(VerificationPassVisitor.java:7)
+	at cool.compiler.FuncFeature.accept(ASTNode.java:89)
+	at cool.compiler.VerificationPassVisitor.lambda$visit$1(VerificationPassVisitor.java:32)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at cool.compiler.VerificationPassVisitor.visit(VerificationPassVisitor.java:32)
+	at cool.compiler.VerificationPassVisitor.visit(VerificationPassVisitor.java:7)
+	at cool.compiler.Class.accept(ASTNode.java:53)
+	at cool.compiler.VerificationPassVisitor.lambda$visit$0(VerificationPassVisitor.java:12)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at cool.compiler.VerificationPassVisitor.visit(VerificationPassVisitor.java:12)
+	at cool.compiler.VerificationPassVisitor.visit(VerificationPassVisitor.java:7)
+	at cool.compiler.Program.accept(ASTNode.java:34)
+	at cool.compiler.Compiler.main(Compiler.java:139)
+	at cool.tester.Tester2.main(Tester2.java:34)

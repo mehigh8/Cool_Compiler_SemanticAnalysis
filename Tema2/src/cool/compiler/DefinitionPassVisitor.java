@@ -27,7 +27,6 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
 
         if (classs.parentClassId != null && Arrays.stream(ClassSymbol.illegalParents).toList().contains(classs.parentClassId.getText())) {
             SymbolTable.error(classs.ctx, classs.parentClassId, "Class " + classs.classId.getText() + " has illegal parent " + classs.parentClassId.getText());
-            return  null;
         }
 
         ClassSymbol symbol = new ClassSymbol(classs.classId.getText(), currentScope, null);
@@ -93,23 +92,26 @@ public class DefinitionPassVisitor implements ASTVisitor<Void> {
     @Override
     public Void visit(Formal formal) {
         FunctionSymbol functionSymbol = (FunctionSymbol) currentScope;
+        formal.setParentMethod(functionSymbol.getName());
         ClassSymbol classSymbol = (ClassSymbol) functionSymbol.getParent();
+        formal.setParentClass(classSymbol.getName());
 
         if (formal.formalId.getText().equals("self")) {
-            SymbolTable.error(formal.ctx, formal.start, "Method " + functionSymbol.getName() + " of class " + classSymbol.getName() + " has formal parameter with illegal name self");
+            SymbolTable.error(formal.ctx, formal.start, "Method " + formal.parentMethod + " of class " + formal.parentClass + " has formal parameter with illegal name self");
             return null;
         }
 
         if (formal.formalType.getText().equals("SELF_TYPE")) {
-            SymbolTable.error(formal.ctx, formal.formalType, "Method " + functionSymbol.getName() + " of class " + classSymbol.getName() + " has formal parameter " + formal.formalId.getText() + " with illegal type SELF_TYPE");
-            return null;
+            SymbolTable.error(formal.ctx, formal.formalType, "Method " + formal.parentMethod + " of class " + formal.parentClass + " has formal parameter " + formal.formalId.getText() + " with illegal type SELF_TYPE");
         }
 
         IdSymbol symbol = new IdSymbol(formal.formalId.getText());
         if (!currentScope.add(symbol)) {
-            SymbolTable.error(formal.ctx, formal.start, "Method " + functionSymbol.getName() + " of class " + classSymbol.getName() + " redefines formal parameter " + formal.formalId.getText());
+            SymbolTable.error(formal.ctx, formal.start, "Method " + formal.parentMethod + " of class " + formal.parentClass + " redefines formal parameter " + formal.formalId.getText());
             return null;
         }
+
+        formal.setSymbol(symbol);
 
         return null;
     }

@@ -131,6 +131,12 @@ public class Compiler {
         
         var definitionPassVisitor = new DefinitionPassVisitor();
         ast.accept(definitionPassVisitor);
+
+        var connectionPassVisitor = new ConnectionPassVisitor();
+        ast.accept(connectionPassVisitor);
+
+        var verificationPassVisitor = new VerificationPassVisitor();
+        ast.accept(verificationPassVisitor);
         
         if (SymbolTable.hasSemanticErrors()) {
             System.err.println("Compilation halted");

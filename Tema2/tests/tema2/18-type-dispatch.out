@@ -1,2 +1,3 @@
 "18-type-dispatch.cl", line 11:15, Semantic error: Type of static dispatch cannot be SELF_TYPE
+"18-type-dispatch.cl", line 12:15, Semantic error: Type Y of static dispatch is undefined
 Compilation halted

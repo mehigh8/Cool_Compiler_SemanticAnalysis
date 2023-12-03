@@ -147,6 +147,8 @@ class Formal extends ASTNode {
     Token formalType;
 
     IdSymbol symbol;
+    String parentClass;
+    String parentMethod;
 
     Formal(ParserRuleContext ctx, Token start, Token formalId, Token formalType) {
         super(ctx, start);
@@ -164,6 +166,22 @@ class Formal extends ASTNode {
 
     public void setSymbol(IdSymbol symbol) {
         this.symbol = symbol;
+    }
+
+    public String getParentClass() {
+        return parentClass;
+    }
+
+    public void setParentClass(String parentClass) {
+        this.parentClass = parentClass;
+    }
+
+    public String getParentMethod() {
+        return parentMethod;
+    }
+
+    public void setParentMethod(String parentMethod) {
+        this.parentMethod = parentMethod;
     }
 }
 
@@ -450,6 +468,8 @@ class Not extends Expression {
 class Assign extends Expression {
     Token varId;
     Expression e;
+
+    IdSymbol symbol;
     Assign(ParserRuleContext ctx, Token start, Token varId, Expression e) {
         super(ctx, start);
         this.varId = varId;
@@ -458,6 +478,14 @@ class Assign extends Expression {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public IdSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(IdSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 

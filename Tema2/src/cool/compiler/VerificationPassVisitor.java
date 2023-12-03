@@ -1,11 +1,10 @@
 package cool.compiler;
 
-import cool.structures.ClassSymbol;
-import cool.structures.FunctionSymbol;
-import cool.structures.Scope;
-import cool.structures.SymbolTable;
+import cool.structures.*;
 
-public class ConnectionPassVisitor implements ASTVisitor<Void> {
+import java.util.Map;
+
+public class VerificationPassVisitor implements ASTVisitor<Void> {
     private Scope currentScope;
     @Override
     public Void visit(Program program) {
@@ -19,14 +18,13 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
         if (classs.symbol == null)
             return null;
 
-        if (classs.parentClassId != null && !classs.parentClassId.getText().equals("SELF_TYPE")) {
-            var parentClass = currentScope.lookup(classs.parentClassId.getText());
-            if (parentClass == null) {
-                SymbolTable.error(classs.ctx, classs.parentClassId, "Class " + classs.classId.getText() + " has undefined parent " + classs.parentClassId.getText());
-                return null;
-            }
+        ClassSymbol current = classs.symbol.getInheritedClass();
+        while (current != null && current != classs.symbol)
+            current = current.getInheritedClass();
 
-            classs.symbol.setInheritedClass((ClassSymbol) parentClass);
+        if (current != null) {
+            SymbolTable.error(classs.ctx, classs.classId, "Inheritance cycle for class " + classs.classId.getText());
+            return null;
         }
 
         currentScope = classs.symbol;
@@ -42,15 +40,29 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
         if (funcFeature.symbol == null)
             return null;
 
-        if (!funcFeature.funcType.getText().equals("SELF_TYPE")) {
-            var type = SymbolTable.globals.lookup(funcFeature.funcType.getText());
-            if (type == null) {
-                SymbolTable.error(funcFeature.ctx, funcFeature.funcType, "Class " + funcFeature.parentClass + " has method " + funcFeature.funcId.getText() + " with undefined return type " + funcFeature.funcType.getText());
-                return null;
-            }
+        ClassSymbol classSymbol = (ClassSymbol) currentScope;
+        if (classSymbol.getInheritedClass() != null) {
+            FunctionSymbol inherited = (FunctionSymbol) classSymbol.getInheritedClass().lookupMethod(funcFeature.funcId.getText());
+            if (inherited != null) {
+                if (inherited.getSymbols().size() != funcFeature.formals.size()) {
+                    SymbolTable.error(funcFeature.ctx, funcFeature.funcId, "Class " + funcFeature.parentClass + " overrides method " + funcFeature.funcId.getText() + " with different number of formal parameters");
+                    return null;
+                }
 
-            funcFeature.symbol.setType((ClassSymbol) type);
+                if (!inherited.getType().getName().equals(funcFeature.funcType.getText()))
+                    SymbolTable.error(funcFeature.ctx, funcFeature.funcType, "Class " + funcFeature.parentClass + " overrides method " + funcFeature.funcId.getText() + " but changes return type from " + inherited.getType().getName() + " to " + funcFeature.funcType.getText());
+
+                int i = 0;
+                for (Map.Entry<String, Symbol> symbolEntry : inherited.getSymbols().entrySet()) {
+                    Formal formal = funcFeature.formals.get(i);
+                    IdSymbol inheritedFormal = (IdSymbol) symbolEntry.getValue();
+                    if (!inheritedFormal.getType().getName().equals(formal.formalType.getText()))
+                        SymbolTable.error(funcFeature.ctx, formal.formalType, "Class " + funcFeature.parentClass + " overrides method " + funcFeature.funcId.getText() + " but changes type of formal parameter " + formal.formalId.getText() + " from " + inheritedFormal.getType().getName() + " to " + formal.formalType.getText());
+                    i++;
+                }
+            }
         }
+
         currentScope = funcFeature.symbol;
 
         funcFeature.formals.forEach(formal -> formal.accept(this));
@@ -65,15 +77,12 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
         if (varFeature.symbol == null)
             return null;
 
-        if (!varFeature.varType.getText().equals("SELF_TYPE")) {
-            var type = SymbolTable.globals.lookup(varFeature.varType.getText());
-            if (type == null) {
-                SymbolTable.error(varFeature.ctx, varFeature.varType, "Class " + varFeature.parentClass + " has attribute " + varFeature.varId.getText() + " with undefined type " + varFeature.varType.getText());
-                return null;
-            }
-
-            varFeature.symbol.setType((ClassSymbol) type);
+        ClassSymbol classSymbol = (ClassSymbol) currentScope;
+        if (classSymbol.getInheritedClass() != null) {
+            if (classSymbol.getInheritedClass().lookupAttribute(varFeature.varId.getText()) != null)
+                SymbolTable.error(varFeature.ctx, varFeature.varId, "Class " + varFeature.parentClass + " redefines inherited attribute " + varFeature.varId.getText());
         }
+
         if (varFeature.e != null)
             varFeature.e.accept(this);
 
@@ -82,41 +91,33 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Formal formal) {
-        if (formal.symbol == null)
-            return null;
-
-        if (!formal.formalType.getText().equals("SELF_TYPE")) {
-            var type = SymbolTable.globals.lookup(formal.formalType.getText());
-            if (type == null) {
-                SymbolTable.error(formal.ctx, formal.formalType, "Method " + formal.parentMethod + " of class " + formal.parentClass + " has formal parameter " + formal.formalId.getText() + " with undefined type " + formal.formalType.getText());
-                return null;
-            }
-
-            formal.symbol.setType((ClassSymbol) type);
-        }
         return null;
     }
 
     @Override
     public Void visit(ExplicitDispatch explicitDispatch) {
-        if (explicitDispatch.parentType != null && !explicitDispatch.parentType.getText().equals("SELF_TYPE")) {
-            var type = SymbolTable.globals.lookup(explicitDispatch.parentType.getText());
-            if (type == null) {
-                SymbolTable.error(explicitDispatch.ctx, explicitDispatch.parentType, "Type " + explicitDispatch.parentType.getText() + " of static dispatch is undefined");
-                return null;
-            }
-
-            explicitDispatch.setParentSymbol((ClassSymbol) type);
-        }
-
         explicitDispatch.obj.accept(this);
         explicitDispatch.dispatch.accept(this);
-
         return null;
     }
 
     @Override
     public Void visit(ImplicitDispatch implicitDispatch) {
+        if (!implicitDispatch.fromExplicit) {
+            Scope scope = currentScope;
+            while (!(scope instanceof ClassSymbol))
+                scope = scope.getParent();
+
+            ClassSymbol classSymbol = (ClassSymbol) scope;
+
+            FunctionSymbol functionSymbol = (FunctionSymbol) classSymbol.lookupMethod(implicitDispatch.funcId.getText());
+            if (functionSymbol == null) {
+                SymbolTable.error(implicitDispatch.ctx, implicitDispatch.funcId, "Undefined method " + implicitDispatch.funcId.getText() + " in class " + classSymbol.getName());
+            } else {
+                if (functionSymbol.getSymbols().size() != implicitDispatch.funcParams.size())
+                    SymbolTable.error(implicitDispatch.ctx, implicitDispatch.funcId, "Method " + implicitDispatch.funcId.getText() + " of class " + classSymbol.getName() + " is applied to wrong number of arguments");
+            }
+        }
         implicitDispatch.funcParams.forEach(param -> param.accept(this));
         return null;
     }
@@ -147,16 +148,6 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
         if (local.symbol == null)
             return null;
 
-        if (!local.varType.getText().equals("SELF_TYPE")) {
-            var type = SymbolTable.globals.lookup(local.varType.getText());
-            if (type == null) {
-                SymbolTable.error(local.ctx, local.varType, "Let variable " + local.varId.getText() + " has undefined type " + local.varType.getText());
-                return null;
-            }
-
-            local.symbol.setType((ClassSymbol) type);
-        }
-
         if (local.varExpr != null)
             local.varExpr.accept(this);
 
@@ -180,15 +171,6 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
         if (caseBranch.symbol == null)
             return null;
 
-        if (!caseBranch.varType.getText().equals("SELF_TYPE")) {
-            var type = SymbolTable.globals.lookup(caseBranch.varType.getText());
-            if (type == null) {
-                SymbolTable.error(caseBranch.ctx, caseBranch.varType, "Case variable " + caseBranch.varId.getText() + " has undefined type " + caseBranch.varType.getText());
-                return null;
-            }
-
-            caseBranch.symbol.setType((ClassSymbol) type);
-        }
         currentScope = caseBranch.symbol;
 
         caseBranch.branchExpr.accept(this);
@@ -206,12 +188,6 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(New neww) {
-        if (!neww.initType.getText().equals("SELF_TYPE")) {
-            var type = SymbolTable.globals.lookup(neww.initType.getText());
-            if (type == null) {
-                SymbolTable.error(neww.ctx, neww.initType, "new is used with undefined type " + neww.initType.getText());
-            }
-        }
         return null;
     }
 
@@ -256,6 +232,14 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Assign assign) {
+        if (!assign.varId.getText().equals("self")) {
+            Symbol idSymbol = currentScope.lookup("1" + assign.varId.getText());
+            if (idSymbol == null)
+                SymbolTable.error(assign.ctx, assign.varId, "Undefined identifier " + assign.varId.getText());
+            else
+                assign.setSymbol((IdSymbol) idSymbol);
+        }
+
         assign.e.accept(this);
         return null;
     }
@@ -268,6 +252,14 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(Id id) {
+        if (!id.varId.getText().equals("self")) {
+            Symbol idSymbol = currentScope.lookup("1" + id.varId.getText());
+            if (idSymbol == null)
+                SymbolTable.error(id.ctx, id.varId, "Undefined identifier " + id.varId.getText());
+            else
+                id.setSymbol((IdSymbol) idSymbol);
+        }
+
         return null;
     }
 
