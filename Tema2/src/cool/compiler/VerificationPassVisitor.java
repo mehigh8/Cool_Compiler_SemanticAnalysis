@@ -103,21 +103,6 @@ public class VerificationPassVisitor implements ASTVisitor<Void> {
 
     @Override
     public Void visit(ImplicitDispatch implicitDispatch) {
-        if (!implicitDispatch.fromExplicit) {
-            Scope scope = currentScope;
-            while (!(scope instanceof ClassSymbol))
-                scope = scope.getParent();
-
-            ClassSymbol classSymbol = (ClassSymbol) scope;
-
-            FunctionSymbol functionSymbol = (FunctionSymbol) classSymbol.lookupMethod(implicitDispatch.funcId.getText());
-            if (functionSymbol == null) {
-                SymbolTable.error(implicitDispatch.ctx, implicitDispatch.funcId, "Undefined method " + implicitDispatch.funcId.getText() + " in class " + classSymbol.getName());
-            } else {
-                if (functionSymbol.getSymbols().size() != implicitDispatch.funcParams.size())
-                    SymbolTable.error(implicitDispatch.ctx, implicitDispatch.funcId, "Method " + implicitDispatch.funcId.getText() + " of class " + classSymbol.getName() + " is applied to wrong number of arguments");
-            }
-        }
         implicitDispatch.funcParams.forEach(param -> param.accept(this));
         return null;
     }

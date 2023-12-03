@@ -1,3 +1,34 @@
 "18-type-dispatch.cl", line 11:15, Semantic error: Type of static dispatch cannot be SELF_TYPE
 "18-type-dispatch.cl", line 12:15, Semantic error: Type Y of static dispatch is undefined
-Compilation halted
+"18-type-dispatch.cl", line 4:18, Semantic error: Type Int of assigned expression is incompatible with declared type C of identifier c
+"18-type-dispatch.cl", line 5:15, Semantic error: Method f of class B is applied to wrong number of arguments
+Exception in thread "main" java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
+	at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:100)
+	at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckIndex(Preconditions.java:106)
+	at java.base/jdk.internal.util.Preconditions.checkIndex(Preconditions.java:302)
+	at java.base/java.util.Objects.checkIndex(Objects.java:385)
+	at java.base/java.util.ArrayList.get(ArrayList.java:427)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:107)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:7)
+	at cool.compiler.ImplicitDispatch.accept(ASTNode.java:236)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:82)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:7)
+	at cool.compiler.ExplicitDispatch.accept(ASTNode.java:209)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:149)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:7)
+	at cool.compiler.Block.accept(ASTNode.java:286)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:39)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:7)
+	at cool.compiler.FuncFeature.accept(ASTNode.java:89)
+	at cool.compiler.TypePassVisitor.lambda$visit$1(TypePassVisitor.java:25)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:25)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:7)
+	at cool.compiler.Class.accept(ASTNode.java:53)
+	at cool.compiler.TypePassVisitor.lambda$visit$0(TypePassVisitor.java:14)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:14)
+	at cool.compiler.TypePassVisitor.visit(TypePassVisitor.java:7)
+	at cool.compiler.Program.accept(ASTNode.java:34)
+	at cool.compiler.Compiler.main(Compiler.java:142)
+	at cool.tester.Tester2.main(Tester2.java:34)

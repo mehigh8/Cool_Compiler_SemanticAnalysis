@@ -117,6 +117,36 @@ public class ClassSymbol extends Symbol implements Scope {
         return null;
     }
 
+    public static boolean isChildOf(ClassSymbol child, ClassSymbol parent) {
+        if (parent == null)
+            return false;
+
+        ClassSymbol currentClass = child;
+        while (currentClass != null) {
+            if (currentClass.getName().equals(parent.getName()))
+                return true;
+
+            currentClass = currentClass.getInheritedClass();
+        }
+
+        return false;
+    }
+
+    public static ClassSymbol leastCommonAncestor(ClassSymbol a, ClassSymbol b) {
+        if (a == null || b == null)
+            return null;
+
+        ClassSymbol currentClass = a;
+        while (currentClass != null) {
+            if (ClassSymbol.isChildOf(b, currentClass))
+                return currentClass;
+
+            currentClass = currentClass.getInheritedClass();
+        }
+
+        return null;
+    }
+
     public Map<String, IdSymbol> getAttributes() {
         return attributes;
     }

@@ -1,7 +1,6 @@
 package cool.compiler;
 
 import cool.structures.ClassSymbol;
-import cool.structures.FunctionSymbol;
 import cool.structures.Scope;
 import cool.structures.SymbolTable;
 
@@ -28,6 +27,9 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
 
             classs.symbol.setInheritedClass((ClassSymbol) parentClass);
         }
+
+        if (classs.symbol.getInheritedClass() == null)
+            classs.symbol.setInheritedClass((ClassSymbol) SymbolTable.globals.lookup("Object"));
 
         currentScope = classs.symbol;
 
@@ -211,6 +213,8 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
             if (type == null) {
                 SymbolTable.error(neww.ctx, neww.initType, "new is used with undefined type " + neww.initType.getText());
             }
+
+            neww.setSymbol((ClassSymbol) type);
         }
         return null;
     }

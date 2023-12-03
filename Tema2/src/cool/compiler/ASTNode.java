@@ -371,6 +371,8 @@ class Case extends Expression {
 
 class New extends Expression {
     Token initType;
+
+    ClassSymbol symbol;
     New(ParserRuleContext ctx, Token start, Token initType) {
         super(ctx, start);
         this.initType = initType;
@@ -378,6 +380,14 @@ class New extends Expression {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public ClassSymbol getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(ClassSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 

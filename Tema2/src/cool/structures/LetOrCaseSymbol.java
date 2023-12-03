@@ -14,8 +14,10 @@ public class LetOrCaseSymbol extends IdSymbol implements Scope {
 
     @Override
     public Symbol lookup(String str) {
-        if (str.substring(1).equals(name))
-            return this;
+        if (str.charAt(0) == '1') {
+            if (str.substring(1).equals(name))
+                return this;
+        }
 
         if (parent != null)
             return parent.lookup(str);
