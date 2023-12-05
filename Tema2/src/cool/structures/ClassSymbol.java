@@ -11,6 +11,7 @@ public class ClassSymbol extends Symbol implements Scope {
     private ClassSymbol inheritedClass;
 
     public static final String[] illegalParents = {"Int", "String", "Bool", "SELF_TYPE"};
+    public static final ClassSymbol SELF_TYPE = new ClassSymbol("SELF_TYPE", null, null);
 
     public ClassSymbol(String name, Scope parent, ClassSymbol inheritedClass) {
         super(name);
@@ -145,6 +146,23 @@ public class ClassSymbol extends Symbol implements Scope {
         }
 
         return null;
+    }
+
+    public static ClassSymbol translateClass(ClassSymbol a, Scope currentScope, ClassSymbol dispatchClass) {
+        if (a == ClassSymbol.SELF_TYPE) {
+            if (dispatchClass != null)
+                return dispatchClass;
+
+            while (currentScope != null && !(currentScope instanceof ClassSymbol))
+                currentScope = currentScope.getParent();
+
+            if (currentScope != null)
+                return (ClassSymbol) currentScope;
+
+            return null;
+        }
+
+        return a;
     }
 
     public Map<String, IdSymbol> getAttributes() {

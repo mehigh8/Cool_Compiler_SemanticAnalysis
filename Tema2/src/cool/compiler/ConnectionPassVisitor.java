@@ -52,6 +52,8 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
             }
 
             funcFeature.symbol.setType((ClassSymbol) type);
+        } else {
+            funcFeature.symbol.setType(ClassSymbol.SELF_TYPE);
         }
         currentScope = funcFeature.symbol;
 
@@ -75,6 +77,8 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
             }
 
             varFeature.symbol.setType((ClassSymbol) type);
+        } else {
+            varFeature.symbol.setType(ClassSymbol.SELF_TYPE);
         }
         if (varFeature.e != null)
             varFeature.e.accept(this);
@@ -157,6 +161,8 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
             }
 
             local.symbol.setType((ClassSymbol) type);
+        } else {
+            local.symbol.setType(ClassSymbol.SELF_TYPE);
         }
 
         if (local.varExpr != null)
@@ -215,6 +221,8 @@ public class ConnectionPassVisitor implements ASTVisitor<Void> {
             }
 
             neww.setSymbol((ClassSymbol) type);
+        } else {
+            neww.setSymbol(ClassSymbol.SELF_TYPE);
         }
         return null;
     }

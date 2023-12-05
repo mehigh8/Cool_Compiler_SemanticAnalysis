@@ -7,6 +7,7 @@ import java.util.Map;
 public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
     private Scope currentScope;
     private ClassSymbol dispatchClass;
+    private ClassSymbol returnTypeDispatchSelfType = null;
 
     @Override
     public ClassSymbol visit(Program program) {
@@ -37,9 +38,15 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
         funcFeature.formals.forEach(formal -> formal.accept(this));
 
         ClassSymbol bodyType = funcFeature.e.accept(this);
-        if (bodyType != null && !ClassSymbol.isChildOf(bodyType, funcFeature.symbol.getType()))
-            SymbolTable.error(funcFeature.ctx, funcFeature.e.start, "Type " + bodyType.getName() + " of the body of method " + funcFeature.funcId.getText() + " is incompatible with declared return type " + funcFeature.funcType.getText());
+        if (bodyType != null) {
+            if (funcFeature.symbol.getType() == ClassSymbol.SELF_TYPE && bodyType == ClassSymbol.SELF_TYPE) {
+                currentScope = currentScope.getParent();
+                return null;
+            }
 
+            if (!ClassSymbol.isChildOf(ClassSymbol.translateClass(bodyType, currentScope, null), funcFeature.symbol.getType()))
+                SymbolTable.error(funcFeature.ctx, funcFeature.e.start, "Type " + bodyType.getName() + " of the body of method " + funcFeature.funcId.getText() + " is incompatible with declared return type " + funcFeature.funcType.getText());
+        }
         currentScope = currentScope.getParent();
         return null;
     }
@@ -51,8 +58,10 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
 
         if (varFeature.e != null) {
             ClassSymbol initType = varFeature.e.accept(this);
-            if (initType != null && !ClassSymbol.isChildOf(initType, varFeature.symbol.getType()))
-                SymbolTable.error(varFeature.ctx, varFeature.e.start, "Type " + initType.getName() + " of initialization expression of attribute " + varFeature.varId.getText() + " is incompatible with declared type " + varFeature.varType.getText());
+            if (initType != null) {
+                if (!ClassSymbol.isChildOf(ClassSymbol.translateClass(initType, currentScope, null), ClassSymbol.translateClass(varFeature.symbol.getType(), currentScope, null)))
+                    SymbolTable.error(varFeature.ctx, varFeature.e.start, "Type " + initType.getName() + " of initialization expression of attribute " + varFeature.varId.getText() + " is incompatible with declared type " + varFeature.varType.getText());
+            }
         }
         return null;
     }
@@ -70,6 +79,9 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
         dispatchClass = explicitDispatch.obj.accept(this);
         if (dispatchClass == null)
             return null;
+
+        returnTypeDispatchSelfType = dispatchClass;
+        dispatchClass = ClassSymbol.translateClass(dispatchClass, currentScope, null);
 
         if (explicitDispatch.parentSymbol != null) {
             if (!ClassSymbol.isChildOf(dispatchClass, explicitDispatch.parentSymbol)) {
@@ -90,6 +102,8 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
                 scope = scope.getParent();
 
             dispatchClass = (ClassSymbol) scope;
+
+            returnTypeDispatchSelfType = ClassSymbol.SELF_TYPE;
         }
 
         FunctionSymbol functionSymbol = (FunctionSymbol) dispatchClass.lookupMethod(implicitDispatch.funcId.getText());
@@ -98,20 +112,24 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
             return null;
         }
 
-        if (functionSymbol.getSymbols().size() != implicitDispatch.funcParams.size())
+        if (functionSymbol.getSymbols().size() != implicitDispatch.funcParams.size()) {
             SymbolTable.error(implicitDispatch.ctx, implicitDispatch.funcId, "Method " + implicitDispatch.funcId.getText() + " of class " + dispatchClass.getName() + " is applied to wrong number of arguments");
+            return  null;
+        }
 
         int i = 0;
         for (Map.Entry<String, Symbol> entrySymbol : functionSymbol.getSymbols().entrySet()) {
             ClassSymbol formalType = ((IdSymbol) entrySymbol.getValue()).getType();
             ClassSymbol actualType = implicitDispatch.funcParams.get(i).accept(this);
 
-            if (actualType != null && !ClassSymbol.isChildOf(actualType, formalType))
-                SymbolTable.error(implicitDispatch.ctx, implicitDispatch.funcParams.get(i).start, "In call to method " + functionSymbol.getName() + " of class " + dispatchClass.getName() + ", actual type " + actualType.getName() + " of formal parameter " + entrySymbol.getKey() + " is incompatible with declared type " + formalType.getName());
+            if (actualType != null) {
+                if (!ClassSymbol.isChildOf(ClassSymbol.translateClass(actualType, currentScope, null), formalType))
+                    SymbolTable.error(implicitDispatch.ctx, implicitDispatch.funcParams.get(i).start, "In call to method " + functionSymbol.getName() + " of class " + dispatchClass.getName() + ", actual type " + actualType.getName() + " of formal parameter " + entrySymbol.getKey() + " is incompatible with declared type " + formalType.getName());
+            }
 
             i++;
         }
-        return functionSymbol.getType();
+        return ClassSymbol.translateClass(functionSymbol.getType(), currentScope, returnTypeDispatchSelfType);
     }
 
     @Override
@@ -126,7 +144,9 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
         ClassSymbol thenBranchType = iff.thenBranch.accept(this);
         ClassSymbol elseBranchType = iff.elseBranch.accept(this);
 
-        return ClassSymbol.leastCommonAncestor(thenBranchType, elseBranchType);
+        if (thenBranchType == ClassSymbol.SELF_TYPE && elseBranchType == ClassSymbol.SELF_TYPE)
+            return ClassSymbol.SELF_TYPE;
+        return ClassSymbol.leastCommonAncestor(ClassSymbol.translateClass(thenBranchType, currentScope, null), ClassSymbol.translateClass(elseBranchType, currentScope, null));
     }
 
     @Override
@@ -158,8 +178,10 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
 
         if (local.varExpr != null) {
             ClassSymbol exprType = local.varExpr.accept(this);
-            if (exprType != null && !ClassSymbol.isChildOf(exprType, local.symbol.getType()))
-                SymbolTable.error(local.ctx, local.varExpr.start, "Type " + exprType.getName() + " of initialization expression of identifier " + local.varId.getText() + " is incompatible with declared type " + local.varType.getText());
+            if (exprType != null) {
+                if (!ClassSymbol.isChildOf(ClassSymbol.translateClass(exprType, currentScope, null), ClassSymbol.translateClass(local.symbol.getType(), currentScope, null)))
+                    SymbolTable.error(local.ctx, local.varExpr.start, "Type " + exprType.getName() + " of initialization expression of identifier " + local.varId.getText() + " is incompatible with declared type " + local.varType.getText());
+            }
         }
 
         currentScope = local.symbol;
@@ -188,7 +210,7 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
 
         currentScope = currentScope.getParent();
 
-        return returnType;
+        return ClassSymbol.translateClass(returnType, currentScope, null);
     }
 
     @Override
@@ -341,9 +363,14 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
             return null;
 
         ClassSymbol initType = assign.e.accept(this);
-        if (initType != null && !ClassSymbol.isChildOf(initType, assign.symbol.getType())) {
-            SymbolTable.error(assign.ctx, assign.e.start, "Type " + initType.getName() + " of assigned expression is incompatible with declared type " + assign.symbol.getType() + " of identifier " + assign.varId.getText());
-            return null;
+        if (initType != null) {
+            if (assign.symbol.getType() == ClassSymbol.SELF_TYPE && initType == ClassSymbol.SELF_TYPE)
+                return ClassSymbol.SELF_TYPE;
+
+            if (!ClassSymbol.isChildOf(ClassSymbol.translateClass(initType, currentScope, null), assign.symbol.getType())) {
+                SymbolTable.error(assign.ctx, assign.e.start, "Type " + initType.getName() + " of assigned expression is incompatible with declared type " + assign.symbol.getType() + " of identifier " + assign.varId.getText());
+                return null;
+            }
         }
 
         return initType;
@@ -356,6 +383,9 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
 
     @Override
     public ClassSymbol visit(Id id) {
+        if (id.varId.getText().equals("self"))
+            return ClassSymbol.SELF_TYPE;
+
         if (id.symbol == null)
             return null;
 
