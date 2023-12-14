@@ -217,7 +217,7 @@ public class TypePassVisitor implements ASTVisitor<ClassSymbol> {
     public ClassSymbol visit(Case casee) {
         casee.caseExpr.accept(this);
 
-        ClassSymbol returnType = casee.caseBranches.getFirst().accept(this);
+        ClassSymbol returnType = casee.caseBranches.get(0).accept(this);
         for (int i = 1; i < casee.caseBranches.size(); i++)
             returnType = ClassSymbol.leastCommonAncestor(returnType, casee.caseBranches.get(i).accept(this));
 
